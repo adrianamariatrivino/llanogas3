@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContratoIA</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0e0f11;--sur:#16181c;--sur2:#1e2026;
+  --bd:#2a2d35;--bd2:#363a45;
+  --txt:#e8e6e0;--txt2:#8a8890;--txt3:#505060;
+  --blue:#4f8ef7;--blue-d:rgba(79,142,247,.12);--blue-b:rgba(79,142,247,.3);
+  --green:#3ecf8e;--green-d:rgba(62,207,142,.1);--green-b:rgba(62,207,142,.3);
+  --amber:#f59e0b;--amber-d:rgba(245,158,11,.1);--amber-b:rgba(245,158,11,.3);
+  --red:#f87171;--r:6px
+}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.5}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(79,142,247,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,.025) 1px,transparent 1px);
+  background-size:44px 44px}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 700px 500px at 5% 15%,rgba(79,142,247,.05) 0%,transparent 70%),
+             radial-gradient(ellipse 500px 600px at 95% 85%,rgba(62,207,142,.04) 0%,transparent 70%)}
+
+.app{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:3rem 1.5rem 6rem}
+
+/* HEADER */
+.hdr{margin-bottom:3rem}
+.hdr-eye{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);margin-bottom:.7rem;display:flex;align-items:center;gap:.5rem}
+.hdr-eye::before{content:'';display:block;width:20px;height:1px;background:var(--blue)}
+h1{font-family:'Instrument Serif',serif;font-size:2.5rem;font-weight:400;line-height:1.15;letter-spacing:-.02em}
+h1 em{font-style:italic;color:var(--blue)}
+.hdr-sub{font-size:.73rem;color:var(--txt2);margin-top:.8rem;line-height:1.9;max-width:540px}
+.hdr-sub code{background:var(--blue-d);color:var(--blue);padding:1px 6px;border-radius:3px;font-size:.68rem}
+
+/* STEP CARD */
+.step{margin-bottom:1rem;border:1px solid var(--bd);border-radius:var(--r);background:var(--sur);overflow:hidden;transition:border-color .2s}
+.step.active{border-color:var(--blue-b)}
+.step.done{border-color:var(--green-b)}
+
+.step-hd{padding:1.1rem 1.5rem;display:flex;align-items:center;gap:.9rem;border-bottom:1px solid var(--bd);background:var(--sur2)}
+.step.active .step-hd{border-bottom-color:var(--blue-b)}
+.step.done .step-hd{border-bottom-color:var(--green-b);background:rgba(62,207,142,.03)}
+
+.sn{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:600;border:1px solid var(--bd2);color:var(--txt2);flex-shrink:0;transition:all .2s}
+.step.active .sn{background:var(--blue-d);border-color:var(--blue);color:var(--blue)}
+.step.done .sn{background:var(--green-d);border-color:var(--green);color:var(--green)}
+
+.si{flex:1}
+.st{font-size:.86rem;font-weight:600;letter-spacing:-.01em}
+.sd{font-size:.67rem;color:var(--txt2);margin-top:2px}
+.ss{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:3px;border:1px solid var(--bd2);color:var(--txt3)}
+.step.active .ss{border-color:var(--blue-b);color:var(--blue);background:var(--blue-d)}
+.step.done .ss{border-color:var(--green-b);color:var(--green);background:var(--green-d)}
+
+.step-bd{padding:1.5rem}
+
+/* DROP ZONE */
+.dz{border:1px dashed var(--bd2);border-radius:var(--r);padding:1.8rem 1.5rem;text-align:center;cursor:pointer;position:relative;transition:all .15s;background:rgba(255,255,255,.01)}
+.dz:hover,.dz.over{border-color:var(--blue);background:var(--blue-d)}
+.dz.done{border-color:var(--green);border-style:solid;background:var(--green-d);cursor:default}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz.done input{pointer-events:none}
+.dz-ico{font-size:1.5rem;display:block;margin-bottom:.5rem}
+.dz-t{font-size:.82rem;font-weight:600}
+.dz-s{font-size:.67rem;color:var(--txt2);margin-top:.25rem}
+.tags{display:flex;gap:.35rem;justify-content:center;margin-top:.7rem;flex-wrap:wrap}
+.tag{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:2px;border:1px solid var(--bd2);color:var(--txt3)}
+
+/* INFO ROW */
+.ir{display:flex;gap:.6rem;align-items:flex-start;background:var(--sur2);border:1px solid var(--bd);border-radius:var(--r);padding:.75rem 1rem;margin-top:.9rem;font-size:.7rem;color:var(--txt2);line-height:1.8}
+.ir b{color:var(--txt)}
+
+/* LOADER */
+.ld{display:flex;align-items:center;gap:.7rem;font-size:.72rem;color:var(--txt2);padding:.4rem 0}
+.sp{width:14px;height:14px;flex-shrink:0;border:2px solid var(--bd2);border-top-color:var(--blue);border-radius:50%;animation:spin .65s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MARKERS */
+.mk-row{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.8rem}
+.mk{font-size:.63rem;font-family:'IBM Plex Mono',monospace;padding:2px 8px;border-radius:3px;background:var(--blue-d);border:1px solid var(--blue-b);color:var(--blue)}
+.mk.ok{background:var(--green-d);border-color:var(--green-b);color:var(--green)}
+.mk.warn{background:var(--amber-d);border-color:var(--amber-b);color:var(--amber)}
+
+/* FIELDS */
+.fl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem}
+.fl-title{font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;color:var(--txt2)}
+.fl-count{font-size:.63rem;color:var(--txt3)}
+
+.legend{display:flex;gap:1.2rem;font-size:.63rem;color:var(--txt3);margin-bottom:.9rem;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:.35rem}
+.dot{width:6px;height:6px;border-radius:50%}
+
+.fields{display:flex;flex-direction:column;gap:.55rem}
+
+/* FIELD ROW */
+.fr{display:grid;grid-template-columns:180px 1fr;border:1px solid var(--bd);border-radius:4px;overflow:hidden;transition:border-color .15s}
+.fr:focus-within{border-color:var(--blue-b)}
+.fr.ok{border-color:var(--green-b)}
+.fr.warn{border-color:var(--amber-b)}
+
+.fk{background:var(--sur2);border-right:1px solid var(--bd);padding:.6rem .85rem;display:flex;flex-direction:column;justify-content:center}
+.fr.ok .fk{border-right-color:var(--green-b)}
+.fr.warn .fk{border-right-color:var(--amber-b)}
+.fk-name{font-size:.68rem;font-weight:600;letter-spacing:.01em;color:var(--txt)}
+.fk-tag{font-size:.57rem;color:var(--txt3);margin-top:1px;font-family:'IBM Plex Mono',monospace}
+.fk-badge{font-size:.52rem;letter-spacing:.07em;text-transform:uppercase;padding:1px 5px;border-radius:2px;margin-top:3px;width:fit-content;border:1px solid}
+.auto-b{background:var(--green-d);color:var(--green);border-color:var(--green-b)}
+.manual-b{background:var(--amber-d);color:var(--amber);border-color:var(--amber-b)}
+
+.fv-wrap{position:relative;display:flex;align-items:stretch}
+.fv{width:100%;background:transparent;border:none;outline:none;font-family:'IBM Plex Mono',monospace;font-size:.76rem;color:var(--txt);padding:.6rem 2rem .6rem .85rem;line-height:1.5;resize:none;min-height:38px}
+.fv::placeholder{color:var(--txt3)}
+.fi{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%}
+.ok .fi{background:var(--green)}
+.warn .fi{background:var(--amber)}
+
+/* BUTTONS */
+.btn{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.73rem;letter-spacing:.04em;padding:.62rem 1.4rem;border-radius:4px;cursor:pointer;border:1px solid;transition:all .15s;display:inline-flex;align-items:center;gap:.45rem}
+.btn-p{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-p:hover:not(:disabled){background:#6aa3f8;box-shadow:0 0 18px rgba(79,142,247,.3)}
+.btn-p:disabled{opacity:.3;cursor:not-allowed}
+.btn-g{background:var(--green);color:#071a0e;border-color:var(--green);font-weight:700}
+.btn-g:hover{background:#5ddba0;box-shadow:0 0 18px rgba(62,207,142,.3)}
+.btn-o{background:transparent;color:var(--txt2);border-color:var(--bd2)}
+.btn-o:hover{border-color:var(--txt2);color:var(--txt)}
+.btn-row{display:flex;gap:.65rem;align-items:center;margin-top:1.3rem;flex-wrap:wrap}
+.btn-hint{font-size:.62rem;color:var(--txt3)}
+
+/* SUMMARY BAR */
+.sbar{display:flex;gap:1.5rem;padding:.9rem 1.1rem;background:var(--sur2);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:1.1rem;flex-wrap:wrap}
+.si2{font-size:.66rem;color:var(--txt2)}
+.si2 strong{display:block;font-size:.8rem;color:var(--txt);margin-bottom:1px}
+
+/* RESULT */
+.res{background:var(--green-d);border:1px solid var(--green-b);border-radius:var(--r);padding:1.3rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1.2rem}
+.res h3{font-family:'Instrument Serif',serif;font-size:1.1rem;font-weight:400;color:var(--green);margin-bottom:.25rem}
+.res p{font-size:.68rem;color:#5da87a;line-height:1.8}
+.dl{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.73rem;padding:.72rem 1.3rem;background:var(--green);color:#071a0e;border:none;border-radius:4px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:.4rem;flex-shrink:0;transition:all .15s;white-space:nowrap}
+.dl:hover{background:#5ddba0;box-shadow:0 0 18px rgba(62,207,142,.3)}
+
+.hidden{display:none!important}
+@media(max-width:540px){
+  h1{font-size:2rem}
+  .fr{grid-template-columns:1fr}
+  .fk{border-right:none;border-bottom:1px solid var(--bd)}
+  .res{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="hdr">
+  <div class="hdr-eye">Herramienta interna</div>
+  <h1>Llenado <em>inteligente</em><br>de contratos</h1>
+  <p class="hdr-sub">
+    Sube la propuesta comercial → sube el contrato con <code>{{CAMPOS}}</code> → 
+    la IA lee la propuesta completa y completa cada campo → revisa y descarga.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 1: PROPUESTA COMERCIAL
+═══════════════════════════════════ -->
+<div class="step active" id="step1">
+  <div class="step-hd">
+    <div class="sn" id="n1">1</div>
+    <div class="si">
+      <div class="st">Propuesta Comercial</div>
+      <div class="sd">El documento que enviaste al cliente con todos los datos del proyecto</div>
+    </div>
+    <div class="ss" id="st1">Pendiente</div>
+  </div>
+  <div class="step-bd">
+    <div class="dz" id="dz1">
+      <input type="file" id="f1" accept=".pdf,.docx,.doc" onchange="onProposal(this)">
+      <span class="dz-ico">📋</span>
+      <div class="dz-t">Arrastra la propuesta aquí</div>
+      <div class="dz-s">o haz clic para seleccionar</div>
+      <div class="tags"><span class="tag">PDF</span><span class="tag">DOCX</span><span class="tag">DOC</span></div>
+    </div>
+    <div class="ir">
+      <span style="flex-shrink:0">💡</span>
+      <span>La IA leerá <b>todo el texto</b> de este documento para encontrar la información que corresponde a cada campo del contrato.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 2: CONTRATO PLANTILLA
+═══════════════════════════════════ -->
+<div class="step" id="step2">
+  <div class="step-hd">
+    <div class="sn" id="n2">2</div>
+    <div class="si">
+      <div class="st">Contrato Plantilla (.docx)</div>
+      <div class="sd">El Word con los campos <code style="font-size:.62rem;color:var(--blue);background:var(--blue-d);padding:1px 5px;border-radius:2px;">{{CAMPO}}</code> que se deben llenar desde la propuesta</div>
+    </div>
+    <div class="ss" id="st2">Esperando</div>
+  </div>
+  <div class="step-bd">
+    <div class="dz" id="dz2" style="opacity:.45;pointer-events:none">
+      <input type="file" id="f2" accept=".docx" onchange="onContract(this)" disabled>
+      <span class="dz-ico">📝</span>
+      <div class="dz-t">Arrastra el contrato aquí</div>
+      <div class="dz-s">El archivo debe tener campos con la forma <strong>{{NOMBRE_DEL_CAMPO}}</strong></div>
+      <div class="tags"><span class="tag">DOCX</span></div>
+    </div>
+    <div id="mkBox" class="hidden">
+      <div class="ir" style="margin-top:.9rem">
+        <span style="flex-shrink:0">🔍</span>
+        <div>
+          <div style="font-size:.68rem;font-weight:600;color:var(--txt);margin-bottom:.4rem">Campos detectados en el contrato:</div>
+          <div class="mk-row" id="mkList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 3: VALIDAR CAMPOS
+═══════════════════════════════════ -->
+<div class="step" id="step3">
+  <div class="step-hd">
+    <div class="sn" id="n3">3</div>
+    <div class="si">
+      <div class="st">Revisar y Corregir</div>
+      <div class="sd">Verifica la información extraída de la propuesta. Edita lo que necesites.</div>
+    </div>
+    <div class="ss" id="st3">Esperando</div>
+  </div>
+  <div class="step-bd">
+    <div id="s3load" class="ld hidden">
+      <div class="sp"></div>
+      <span id="s3msg">Leyendo propuesta y extrayendo datos...</span>
+    </div>
+    <div id="s3content" class="hidden">
+      <div id="sbar" class="sbar hidden"></div>
+      <div class="legend">
+        <div class="leg"><div class="dot" style="background:var(--green)"></div>Extraído de la propuesta</div>
+        <div class="leg"><div class="dot" style="background:var(--amber)"></div>No encontrado — edita manualmente</div>
+      </div>
+      <div class="fl-hdr">
+        <div class="fl-title">Campos del contrato</div>
+        <div class="fl-count" id="flCount"></div>
+      </div>
+      <div class="fields" id="fieldsList"></div>
+      <div class="btn-row">
+        <button class="btn btn-p" id="btnGen" onclick="generate()" disabled>✦ Generar contrato llenado</button>
+        <span class="btn-hint" id="genHint"></span>
+      </div>
+    </div>
+    <div id="s3empty" style="font-size:.72rem;color:var(--txt3);line-height:1.8">
+      Completa los pasos anteriores para ver los campos aquí.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PASO 4: DESCARGAR
+═══════════════════════════════════ -->
+<div class="step" id="step4">
+  <div class="step-hd">
+    <div class="sn" id="n4">4</div>
+    <div class="si">
+      <div class="st">Descargar Contrato</div>
+      <div class="sd">Word listo con todos los campos reemplazados</div>
+    </div>
+    <div class="ss" id="st4">Esperando</div>
+  </div>
+  <div class="step-bd">
+    <div id="s4load" class="ld hidden"><div class="sp"></div><span>Aplicando datos al contrato...</span></div>
+    <div id="s4content" class="hidden">
+      <div class="res">
+        <div>
+          <h3>Contrato generado</h3>
+          <p id="resMsg">Campos reemplazados. Revisa antes de enviar.</p>
+        </div>
+        <a id="dlLink" class="dl" href="#" download="contrato_llenado.docx">⬇ Descargar .docx</a>
+      </div>
+      <div class="btn-row" style="margin-top:1rem">
+        <button class="btn btn-o" onclick="location.reload()">↩ Procesar otro contrato</button>
+      </div>
+    </div>
+    <div id="s4empty" style="font-size:.72rem;color:var(--txt3);line-height:1.8">
+      Completa los pasos anteriores para descargar.
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const S = {
+  proposalBase64: '',   // base64 of the proposal file
+  proposalMime: '',     // mime type
+  proposalExt: '',      // file extension
+  contractBuf: null,    // ArrayBuffer of the contract docx
+  markers: [],          // ["NOMBRE_CLIENTE", ...]
+  fields: {}            // { NOMBRE_CLIENTE: { val:'', auto:false } }
+};
+
+// ═══════════════════════════════════════════
+// STEP 1 — LOAD PROPOSAL AS BASE64
+// ═══════════════════════════════════════════
+async function onProposal(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  dzDone('dz1', file.name, fmtSize(file.size));
+  stepState(1, 'active', 'Cargando...');
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  S.proposalExt = ext;
+
+  // Map mime type
+  const mimes = {
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc: 'application/msword'
+  };
+  S.proposalMime = mimes[ext] || 'application/pdf';
+
+  // Read as base64 — most reliable, sent directly to Claude
+  S.proposalBase64 = await fileToBase64(file);
+
+  stepState(1, 'done', 'Listo ✓');
+
+  // Unlock step 2
+  const dz2 = document.getElementById('dz2');
+  dz2.style.opacity = '';
+  dz2.style.pointerEvents = '';
+  document.getElementById('f2').disabled = false;
+  stepState(2, 'active', 'Listo');
+}
+
+// ═══════════════════════════════════════════
+// STEP 2 — DETECT MARKERS FROM CONTRACT
+// ═══════════════════════════════════════════
+async function onContract(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  S.contractBuf = await file.arrayBuffer();
+  dzDone('dz2', file.name, fmtSize(file.size));
+
+  // Extract markers
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  const zip = await JSZip.loadAsync(S.contractBuf.slice(0));
+  const xml = await zip.file('word/document.xml').async('string');
+
+  // Get all text (merged from runs to catch split markers)
+  const plainFromRuns = [];
+  const runRe = /<w:t[^>]*>([^<]*)<\/w:t>/g;
+  let m;
+  while ((m = runRe.exec(xml)) !== null) plainFromRuns.push(m[1]);
+  const joinedText = plainFromRuns.join('');
+
+  // Also strip all tags
+  const stripped = xml.replace(/<[^>]+>/g,' ');
+
+  const found = new Set();
+  const markerRe = /\{\{([^{}]{1,60})\}\}/g;
+  [joinedText, stripped].forEach(src => {
+    while ((m = markerRe.exec(src)) !== null) found.add(m[1].trim());
+    markerRe.lastIndex = 0;
+  });
+
+  S.markers = Array.from(found);
+
+  if (S.markers.length === 0) {
+    alert('No se encontraron campos {{...}} en el contrato. Asegúrate de que el archivo tenga marcadores con ese formato.');
+    return;
+  }
+
+  // Show detected markers
+  const mkList = document.getElementById('mkList');
+  mkList.innerHTML = S.markers.map(mk => `<span class="mk" id="mk_${safeid(mk)}">{{${mk}}}</span>`).join('');
+  show('mkBox');
+  stepState(2, 'done', S.markers.length + ' campo' + (S.markers.length>1?'s':''));
+
+  // Start AI extraction
+  runAI();
+}
+
+// ═══════════════════════════════════════════
+// STEP 3 — AI EXTRACTION (SISTEMA EXPERTO)
+// ═══════════════════════════════════════════
+async function runAI() {
+  stepState(3, 'active', 'Procesando...');
+  hide('s3empty'); hide('s3content');
+  show('s3load');
+  setText('s3msg', 'Sistema experto leyendo la propuesta...');
+
+  // Build the list of markers with original names for the prompt
+  const markerList = S.markers.map(mk => `{{${mk}}}`).join(', ');
+
+  const systemPrompt = `Eres un SISTEMA EXPERTO en automatización de contratos para empresas de gas, instalaciones y construcción en Colombia.
+
+════════════════════════════════════
+PASO 1 — DETECTAR CAMPOS
+════════════════════════════════════
+Los campos del contrato que debes llenar son:
+${markerList}
+
+════════════════════════════════════
+PASO 2 — INTERPRETAR CAMPOS
+════════════════════════════════════
+Para cada campo, entiende su significado completo. El nombre del campo es descriptivo e incluye instrucciones.
+Ejemplos de interpretación:
+- "VALOR TOTAL *40% EN NUMERO" → calcular valor_total × 0.40, devolver número formateado
+- "VALOR TOTAL *40% EN LETRAS" → calcular valor_total × 0.40, devolver en letras en español
+- "NOMBRE DEL PROYECTO" → nombre comercial del proyecto inmobiliario
+- "ASUNTO SIN NUMERO PEGC" → texto del asunto eliminando el código PEGC-XXXX
+- "NOMBRE REPRESENTANTE LEGAL" → nombre completo del representante legal del cliente
+
+════════════════════════════════════
+PASO 3 — DICCIONARIO INTELIGENTE
+════════════════════════════════════
+Usa estas reglas para encontrar datos en la propuesta:
+
+NOMBRE DEL PROYECTO / PROYECTO:
+  → Buscar después de "Proyecto" o en el título
+  → Ej: "Proyecto Arboretto Fase 2" → "Arboretto Fase 2"
+
+NIT / NUMERO NIT:
+  → Buscar "NIT", "NIT.", "Nit No."
+  → Extraer número completo con guión verificador
+  → Ej: "900.015.196-5"
+
+REPRESENTANTE LEGAL / NOMBRE REPRESENTANTE:
+  → Buscar después de "Representante Legal", "representada por", "suscrito por"
+  → Tomar nombre completo en mayúsculas
+
+CÉDULA / CEDULA / CC / NUMERO CEDULA:
+  → Buscar "cédula de ciudadanía", "C.C", "CC N°", "identificado con"
+  → Extraer número
+
+CELULAR / TELEFONO / TEL:
+  → Buscar número de 10 dígitos, "Cel:", "Tel:", "celular", línea directa
+  → Ej: "3108524899"
+
+ASUNTO / REFERENCIA:
+  → Buscar "Asunto:" en el encabezado de la propuesta
+  → Extraer el texto completo
+
+ASUNTO SIN PEGC / ASUNTO SIN NUMERO:
+  → Igual que ASUNTO pero eliminar el código PEGC-XXXX-XXXXXXXX del texto
+
+NUMERO PEGC / CODIGO PEGC / PEGC:
+  → Buscar código que comience con "PEGC-"
+  → Ej: "PEGC-0050-09032026"
+
+CIUDAD:
+  → Buscar en el encabezado (ej: "Villavicencio, 09 de Marzo...")
+  → O en pie de página / dirección
+
+DEPARTAMENTO:
+  → Inferir desde la ciudad:
+    Villavicencio → Meta
+    Bogotá → Cundinamarca
+    Medellín → Antioquia
+    Cali → Valle del Cauca
+    Barranquilla → Atlántico
+    Bucaramanga → Santander
+
+FECHA / FECHA HOY / FECHA PROPUESTA:
+  → Buscar fecha en el encabezado de la propuesta
+  → Formato: "09 de Marzo de 2026"
+
+VALOR TOTAL / PRECIO TOTAL:
+  → Buscar "VALOR TOTAL:" seguido de número con $
+  → Extraer número completo: "$ 317.108.032"
+
+VALOR EN LETRAS:
+  → Convertir el valor numérico total a texto en español colombiano
+  → Ej: "TRESCIENTOS DIECISIETE MILLONES CIENTO OCHO MIL TREINTA Y DOS PESOS M/CTE"
+
+EMAIL / CORREO:
+  → Buscar texto que contenga "@"
+  → Ej: "proyectosconstructoras@grupodellano.com"
+
+DIRECCIÓN / DIRECCION:
+  → Buscar en pie de página o encabezado
+  → Ej: "Calle 34 A N° 34 - 29, Torre 1, Barrio Barzal"
+
+CANTIDAD / UNIDADES / APARTAMENTOS:
+  → Buscar número de unidades, apartamentos o lotes
+  → Ej: "160"
+
+════════════════════════════════════
+PASO 4 — CÁLCULOS AUTOMÁTICOS
+════════════════════════════════════
+Si el nombre del campo contiene una operación matemática, DEBES calcularla:
+
+Ejemplos de campos con cálculos:
+  {{VALOR TOTAL *40% EN NUMERO}}  → valor_total × 0.40 → devolver: "$ 126.843.213"
+  {{VALOR TOTAL *40% EN LETRAS}}  → valor_total × 0.40 → devolver en letras
+  {{VALOR TOTAL *30% EN NUMERO}}  → valor_total × 0.30
+  {{VALOR TOTAL *20% EN NUMERO}}  → valor_total × 0.20
+  {{VALOR TOTAL *10% EN NUMERO}}  → valor_total × 0.10
+  {{ANTICIPO 40%}}                → valor_total × 0.40
+
+Reglas de formato:
+  - "EN NUMERO" → formato colombiano con puntos: "$ 126.843.213"
+  - "EN LETRAS" → texto en español en mayúsculas: "CIENTO VEINTISÉIS MILLONES..."
+  - Siempre usar el VALOR TOTAL encontrado en la propuesta como base
+
+════════════════════════════════════
+PASO 5 — BÚSQUEDA INTELIGENTE
+════════════════════════════════════
+- Lee TODA la propuesta, incluyendo encabezados, tablas, notas y pie de página
+- Busca por contexto semántico, no solo coincidencia exacta de palabras
+- Usa sinónimos: NIT = identificación tributaria, celular = teléfono = tel
+- Si un dato aparece en múltiples formas, usa el más completo
+- REGLA CRÍTICA: Si el dato existe en la propuesta, DEBES encontrarlo. No dejes vacío si se puede calcular o inferir.
+
+════════════════════════════════════
+FORMATO DE RESPUESTA
+════════════════════════════════════
+Responde ÚNICAMENTE con un objeto JSON válido.
+SIN texto antes, SIN bloques de código, SIN explicaciones.
+Usa exactamente los mismos nombres de los campos (sin {{ }}).
+
+Ejemplo:
+{"NOMBRE_CLIENTE":"CONTRAFUERTE","CELULAR":"3108524899","VALOR_TOTAL":"$ 317.108.032"}`;
+
+  const userMsg = `Estos son los campos del contrato que debes llenar:
+${markerList}
+
+Lee la propuesta adjunta completa y devuelve el JSON con el valor de cada campo.
+Recuerda: si el campo tiene un cálculo (como *40%), resuélvelo.
+Responde SOLO el objeto JSON.`;
+
+  try {
+    const res = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: S.proposalMime,
+                data: S.proposalBase64
+              }
+            },
+            { type: 'text', text: userMsg }
+          ]
+        }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    // Robust JSON extraction — find outermost { }
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Respuesta inesperada de la IA: ' + raw.slice(0, 300));
+
+    const extracted = JSON.parse(jsonMatch[0]);
+
+    S.fields = {};
+    S.markers.forEach(mk => {
+      const v = (extracted[mk] !== undefined && extracted[mk] !== null)
+        ? String(extracted[mk]).trim()
+        : '';
+      S.fields[mk] = { val: v, auto: v.length > 0 };
+    });
+
+    // Also try case-insensitive match for keys that don't match exactly
+    S.markers.forEach(mk => {
+      if (S.fields[mk].val) return; // already found
+      const mkLower = mk.toLowerCase().replace(/\s+/g,'_');
+      const matchKey = Object.keys(extracted).find(k =>
+        k.toLowerCase().replace(/\s+/g,'_') === mkLower
+      );
+      if (matchKey && extracted[matchKey]) {
+        S.fields[mk] = { val: String(extracted[matchKey]).trim(), auto: true };
+      }
+    });
+
+  } catch(err) {
+    console.error('AI error:', err);
+    S.markers.forEach(mk => { S.fields[mk] = { val: '', auto: false }; });
+    const hint = document.getElementById('genHint');
+    if (hint) {
+      hint.textContent = '⚠ Error: ' + err.message + '. Completa los campos manualmente.';
+      hint.style.color = 'var(--red)';
+    }
+  }
+
+  hide('s3load');
+  renderFields();
+}
+
+// ═══════════════════════════════════════════
+// RENDER FIELDS
+// ═══════════════════════════════════════════
+function renderFields() {
+  const keys = Object.keys(S.fields);
+  const filled = keys.filter(k => S.fields[k].val.length > 0).length;
+  const empty = keys.length - filled;
+
+  // Summary bar
+  const sbar = document.getElementById('sbar');
+  sbar.classList.remove('hidden');
+  sbar.innerHTML = `
+    <div class="si2"><strong>${keys.length}</strong>campos detectados</div>
+    <div class="si2"><strong style="color:var(--green)">${filled}</strong>extraídos de la propuesta</div>
+    ${empty>0?`<div class="si2"><strong style="color:var(--amber)">${empty}</strong>requieren revisión</div>`:''}
+  `;
+
+  // Fields list
+  const list = document.getElementById('fieldsList');
+  list.innerHTML = '';
+
+  keys.forEach(mk => {
+    const f = S.fields[mk];
+    const cls = f.val.length > 0 ? 'ok' : 'warn';
+    const label = mk.replace(/_/g,' ');
+    const div = document.createElement('div');
+    div.className = `fr ${cls}`;
+    div.id = 'fr_' + safeid(mk);
+    div.innerHTML = `
+      <div class="fk">
+        <div class="fk-name">${label}</div>
+        <div class="fk-tag">{{${mk}}}</div>
+        <span class="fk-badge ${f.auto?'auto-b':'manual-b'}">${f.auto?'✓ de propuesta':'⚠ editar'}</span>
+      </div>
+      <div class="fv-wrap">
+        <textarea class="fv" rows="1"
+          placeholder="No encontrado — escribe aquí el valor..."
+          oninput="onFieldChange('${mk}',this)"
+        >${escHtml(f.val)}</textarea>
+        <div class="fi"></div>
+      </div>`;
+    list.appendChild(div);
+    const ta = div.querySelector('textarea');
+    autoResize(ta);
+    ta.addEventListener('input', () => autoResize(ta));
+  });
+
+  document.getElementById('flCount').textContent = `${filled}/${keys.length} completos`;
+  show('s3content');
+  stepState(3, empty>0?'active':'done', empty>0?`${empty} por revisar`:'Completo ✓');
+  updateMkColors();
+  updateGenBtn();
+}
+
+function onFieldChange(mk, ta) {
+  S.fields[mk].val = ta.value;
+  const row = document.getElementById('fr_' + safeid(mk));
+  const haVal = ta.value.trim().length > 0;
+  row.classList.toggle('ok', haVal);
+  row.classList.toggle('warn', !haVal);
+  const keys = Object.keys(S.fields);
+  const filled = keys.filter(k => S.fields[k].val.trim().length > 0).length;
+  document.getElementById('flCount').textContent = `${filled}/${keys.length} completos`;
+  updateMkColors();
+  updateGenBtn();
+}
+
+function updateMkColors() {
+  S.markers.forEach(mk => {
+    const el = document.getElementById('mk_' + safeid(mk));
+    if (!el) return;
+    const v = S.fields[mk]?.val || '';
+    el.className = 'mk ' + (v.length > 0 ? 'ok' : 'warn');
+  });
+}
+
+function updateGenBtn() {
+  const btn = document.getElementById('btnGen');
+  const hint = document.getElementById('genHint');
+  const empty = Object.values(S.fields).filter(f => !f.val.trim()).length;
+  btn.disabled = false;
+  if (empty > 0) {
+    hint.textContent = `${empty} campo${empty>1?'s':''} sin dato — se dejarán en blanco en el contrato`;
+    hint.style.color = 'var(--amber)';
+  } else {
+    hint.textContent = '✓ Todos los campos tienen información';
+    hint.style.color = 'var(--green)';
+  }
+}
+
+// ═══════════════════════════════════════════
+// STEP 4 — GENERATE DOCX
+// ═══════════════════════════════════════════
+async function generate() {
+  stepState(4, 'active', 'Generando...');
+  hide('s4empty'); hide('s4content'); show('s4load');
+  document.getElementById('step4').scrollIntoView({ behavior:'smooth', block:'start' });
+
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+
+  try {
+    const zip = await JSZip.loadAsync(S.contractBuf.slice(0));
+    const filesToProcess = [];
+
+    // Collect document.xml + headers + footers
+    zip.forEach((path, file) => {
+      if (path.match(/^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/)) {
+        filesToProcess.push(path);
+      }
+    });
+
+    let totalReplaced = 0;
+
+    for (const path of filesToProcess) {
+      let xml = await zip.file(path).async('string');
+      const before = xml;
+
+      S.markers.forEach(mk => {
+        const val = escXml(S.fields[mk]?.val?.trim() || '');
+        const marker = `{{${mk}}}`;
+
+        // Direct replace
+        if (xml.includes(marker)) {
+          xml = xml.split(marker).join(val);
+        }
+
+        // Split-run replace: marker chars separated by XML tags
+        const charPat = marker.split('').map(regEsc).join('(?:<[^>]*>)*');
+        const re = new RegExp(charPat, 'g');
+        xml = xml.replace(re, val);
+      });
+
+      if (xml !== before) totalReplaced++;
+      zip.file(path, xml);
+    }
+
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.getElementById('dlLink');
+    link.href = url;
+
+    // Build filename
+    const nameKey = S.markers.find(m => /cliente|empresa|nombre|razon|contratante/i.test(m));
+    const nameVal = nameKey ? (S.fields[nameKey]?.val || '') : '';
+    const safe = nameVal.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g,'_').replace(/_+/g,'_').slice(0,40) || 'llenado';
+    link.download = `Contrato_${safe}.docx`;
+
+    const filled = Object.values(S.fields).filter(f=>f.val.trim()).length;
+    const total = S.markers.length;
+    document.getElementById('resMsg').innerHTML =
+      `<strong style="color:var(--green)">${filled} de ${total}</strong> campos reemplazados.` +
+      (filled < total ? ` <span style="color:var(--amber)">${total-filled} quedaron vacíos.</span>` : ' Revisa antes de enviar al cliente.');
+
+    hide('s4load'); show('s4content');
+    stepState(4, 'done', 'Listo ✓');
+
+  } catch(err) {
+    hide('s4load');
+    document.getElementById('s4empty').textContent = 'Error: ' + err.message;
+    show('s4empty');
+    console.error(err);
+  }
+}
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function stepState(n, state, txt) {
+  const el = document.getElementById('step'+n);
+  el.classList.remove('active','done');
+  if (state==='active') el.classList.add('active');
+  if (state==='done') el.classList.add('done');
+  document.getElementById('n'+n).textContent = state==='done'?'✓':String(n);
+  document.getElementById('st'+n).textContent = txt;
+}
+
+function dzDone(id, name, size) {
+  const z = document.getElementById(id);
+  z.classList.add('done');
+  z.querySelector('.dz-ico').textContent = '✅';
+  z.querySelector('.dz-t').textContent = name;
+  z.querySelector('.dz-s').textContent = size;
+  const tg = z.querySelector('.tags'); if(tg) tg.remove();
+}
+
+function autoResize(ta) { ta.style.height='auto'; ta.style.height=Math.max(38, ta.scrollHeight)+'px'; }
+
+function fmtSize(b) { return b>1048576?(b/1048576).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB'; }
+
+function loadScript(src) {
+  return new Promise((res,rej) => {
+    if (src.includes('jszip') && window.JSZip) return res();
+    if (src.includes('pdf') && window.pdfjsLib && window.pdfjsLib.getDocument) return res();
+    const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Error leyendo archivo'));
+    r.readAsDataURL(file);
+  });
+}
+
+function show(id){document.getElementById(id)?.classList.remove('hidden')}
+function hide(id){document.getElementById(id)?.classList.add('hidden')}
+function setText(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+function safeid(s){return s.replace(/[^a-zA-Z0-9]/g,'_')}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function escXml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+function regEsc(c){return c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+
+// Drag-and-drop for both zones
+['dz1','dz2'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('over')});
+  el.addEventListener('dragleave',()=>el.classList.remove('over'));
+  el.addEventListener('drop',e=>{
+    e.preventDefault();el.classList.remove('over');
+    const file=e.dataTransfer?.files[0]; if(!file) return;
+    const inp=document.getElementById(id==='dz1'?'f1':'f2');
+    const dt=new DataTransfer(); dt.items.add(file); inp.files=dt.files;
+    inp.dispatchEvent(new Event('change'));
+  });
+});
+</script>
+</body>
+</html>
